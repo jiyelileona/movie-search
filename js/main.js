@@ -3,14 +3,16 @@ require('dotenv').config();
 let search = '';
 let count = 1;
 
-const getMoviesData = async movieName => {
+const getMoviesData = async (movieName, page) => {
   try {
-    const movies = await fetch(
+    let movies = await fetch(
       `https://www.omdbapi.com/?apikey=${process.env.API_KEY}&s=${movieName}`
     );
     search = movieName;
     if (count > 1) {
-      getNextMovie(search, count);
+      movies = await fetch(
+        `https://www.omdbapi.com/?apikey=${process.env.API_KEY}&s=${search}&page=${page}`
+      );
     }
     const data = await movies.json();
     if (data.Response == 'False') {
@@ -20,14 +22,6 @@ const getMoviesData = async movieName => {
   } catch (err) {
     return "There's an error: " + err.message;
   }
-};
-
-const getNextMovie = async (name, page) => {
-  const movies = await fetch(
-    `https://www.omdbapi.com/?apikey=${process.env.API_KEY}&s=${name}&page=${page}`
-  );
-  const data = await movies.json();
-  data.Search.map(search => search.imdbID).map(id => getInfoOfMovie(id));
 };
 
 const getInfoOfMovie = async id => {
@@ -78,7 +72,7 @@ const next = document.querySelector('#next');
 next.addEventListener('click', () => {
   count++;
   movies.innerHTML = '';
-  getNextMovie(search, count);
+  getMoviesData(search, count);
 });
 
 searchBar.addEventListener('keypress', e => {
