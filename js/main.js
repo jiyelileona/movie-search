@@ -1,15 +1,33 @@
 import regeneratorRuntime from 'regenerator-runtime';
 require('dotenv').config();
+let search = '';
+let count = 1;
 
 const getMoviesData = async movieName => {
   try {
-    await fetch(`https://www.omdbapi.com/?apikey=${process.env.API_KEY}&s=${movieName}`)
-      .json()
-      .Search.map(search => search.imdbID)
-      .map(id => getInfoOfMovie(id));
+    const movies = await fetch(
+      `https://www.omdbapi.com/?apikey=${process.env.API_KEY}&s=${movieName}`
+    );
+    search = movieName;
+    if (count > 1) {
+      getNextMovie(search, count);
+    }
+    const data = await movies.json();
+    if (data.Response == 'False') {
+      console.error('Could not find movies');
+    }
+    data.Search.map(search => search.imdbID).map(id => getInfoOfMovie(id));
   } catch (err) {
     return "There's an error: " + err.message;
   }
+};
+
+const getNextMovie = async (name, page) => {
+  const movies = await fetch(
+    `https://www.omdbapi.com/?apikey=${process.env.API_KEY}&s=${name}&page=${page}`
+  );
+  const data = await movies.json();
+  data.Search.map(search => search.imdbID).map(id => getInfoOfMovie(id));
 };
 
 const getInfoOfMovie = async id => {
@@ -23,10 +41,13 @@ const movies = document.querySelector('.movies');
 const createHTML = (Title, imdbRating, Plot, Poster) => {
   movies.insertAdjacentHTML(
     'beforeend',
-    `<div class="movie" style="background-image: url(${Poster})">
-      <p>${Title}</p>
-      <p>${imdbRating}</p>
-      <p>${Plot}</p>
+    `<div class="movie">
+      <img src="${Poster}"/>
+      <div class="info">
+        <p>${Title}</p>
+        <p>${imdbRating}</p>
+        <p>${Plot}</p>
+      </div>   
     </div>
       `
   );
@@ -52,6 +73,13 @@ window.onload = () => {
 };
 
 const searchBar = document.querySelector('.search');
+const next = document.querySelector('#next');
+
+next.addEventListener('click', () => {
+  count++;
+  movies.innerHTML = '';
+  getNextMovie(search, count);
+});
 
 searchBar.addEventListener('keypress', e => {
   if (e.keyCode == 13) {
